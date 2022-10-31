@@ -848,9 +848,12 @@ def processMssWrs1Imgs(params):
         imgs.append(yearImg)
 
     outImg = appendIdToBandnames(ee.ImageCollection(imgs).toBands())
-    print('outImg', outImg)
+    bn = outImg.bandNames()
+    print('Band Names:' + str(bn.getInfo()))
+    
     outAsset = params['baseDir'] + '/MSS_WRS1_to_WRS2_stack'
     print(outAsset)
+    
     task = ee.batch.Export.image.toAsset(**{
         'image': outImg.clip(geom),
         'description': 'MSS_WRS1_to_WRS2_stack',

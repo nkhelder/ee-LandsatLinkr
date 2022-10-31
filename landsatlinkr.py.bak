@@ -795,7 +795,6 @@ def processMssWrs1Imgs(params):
     print('Exporting annual MSS composites that match the MSS 2nd Gen reference image, please wait.')
     granuleGeom = msslib['getWrs1GranuleGeom'](params['wrs1'])
     geom = ee.Feature(granuleGeom.get('granule')).geometry()
-    print('Geometry:', geom)
     params['aoi'] = ee.Geometry(granuleGeom.get('centroid'))
     params['wrs'] = '1'
 
@@ -804,8 +803,8 @@ def processMssWrs1Imgs(params):
 
     mssCol = (msslib['getCol'](params)
         .filter(ee.Filter.eq('pr', params['wrs1'])))
-    colSize = mssCol.size()    
-    print('MSS Col Size:', str(colSize.getInfo())) 
+    # colSize = mssCol.size()    
+    # print('MSS Col Size:', str(colSize.getInfo())) 
     
     mss1983 = msslib['getCol']({
         'aoi': geom,
@@ -815,8 +814,8 @@ def processMssWrs1Imgs(params):
     })
 
     mssCol = mssCol.merge(mss1983).map(setRefImg)
-    colSize2 = mssCol.size()
-    print('MSS Col Size after merge:', str(colSize2.getInfo())) 
+    # colSize2 = mssCol.size()
+    # print('MSS Col Size after merge:', str(colSize2.getInfo())) 
     
     dummy = (ee.Image([0, 0, 0, 0, 0, 0, 0, 0]).selfMask().toShort()
         .rename(['green', 'red', 'red-edge', 'nir', 'ndvi', 'tcb', 'tcg', 'tca']))
@@ -860,12 +859,7 @@ def processMssWrs1Imgs(params):
         'scale': 60,
         'crs': params['crs']
     })
-    # nkh
-    try:
-        task.start()
-    except:
-        traceback.print_exc()
-        
+    task.start()  
     return task
 
 
