@@ -832,7 +832,7 @@ def processMssWrs1Imgs(params):
             yearImg = dummy
         else:
             if y != 1983:
-                yrCol = yrCol.map(processMssWrs1Img2) # nkh normalize to ref image? 
+                yrCol = yrCol.map(processMssWrs1Img2)
                 parallelScale = 1
             else:
                 yrCol = yrCol.map(prepMss)  # NOTE: not 1983 normalized to ref image
@@ -854,12 +854,7 @@ def processMssWrs1Imgs(params):
         'scale': 60,
         'crs': params['crs']
     })
-    # nkh
-    try:
-        task.start()
-    except:
-        traceback.print_exc()
-        
+    task.start()
     return task
 
 
