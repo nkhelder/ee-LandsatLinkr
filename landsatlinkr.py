@@ -818,9 +818,15 @@ def processMssWrs1Imgs(params):
     
     imgs = []
     for y in range(1972, 1984):
-        print('Year:', y)
+        # jdb
+        # print('Year:', y)
+        # yrCol = mssCol.filter(ee.Filter.eq('year', y))
+        # n_imgs = yrCol.size().getInfo()
+        
+        # nkh
         yrCol = mssCol.filter(ee.Filter.eq('year', y))
         n_imgs = yrCol.size().getInfo()
+        print('Year:', y, 'Total images:', n_imgs) 
         if (n_imgs == 0):
             print('  no images, exporting placeholder')
             yearImg = dummy
