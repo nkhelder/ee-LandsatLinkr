@@ -848,8 +848,8 @@ def processMssWrs1Imgs(params):
         imgs.append(yearImg)
 
     outImg = appendIdToBandnames(ee.ImageCollection(imgs).toBands())
-    bn = outImg.bandNames()
-    print('Band Names:' + str(bn.getInfo()))
+    # bn = outImg.bandNames()
+    # print('Band Names:' + str(bn.getInfo()))
     
     outAsset = params['baseDir'] + '/MSS_WRS1_to_WRS2_stack'
     print(outAsset)
@@ -860,7 +860,8 @@ def processMssWrs1Imgs(params):
         'assetId': outAsset,
         'region': geom,
         'scale': 60,
-        'crs': params['crs']
+        'crs': params['crs'],
+        'maxPixels': 1e13
     })
     task.start()  
     return task
