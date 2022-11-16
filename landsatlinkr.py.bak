@@ -1148,7 +1148,7 @@ def exportMssOffset(params):
     outAsset = params['baseDir'] + '/MSS_offset'
     print(outAsset)
     task = ee.batch.Export.image.toAsset(**{
-        'image': difCol.clip(geom),
+        'image': difCol.clip(params['shoreGeom']), #.clip(geom)
         'description': 'MSS_offset',
         'assetId': outAsset,
         'region': geom,
