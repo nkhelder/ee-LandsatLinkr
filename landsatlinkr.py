@@ -836,7 +836,7 @@ def processMssWrs1Imgs(params):
             yearImg = dummy
         else:
             if y != 1983:
-                yrCol = yrCol.map(processMssWrs1Img2) # nkh normalize to ref image? 
+                yrCol = yrCol.map(processMssWrs1Img2) # nkh normalize to ref image i think?
                 parallelScale = 1
             else:
                 yrCol = yrCol.map(prepMss)  # NOTE: not 1983 normalized to ref image
@@ -848,8 +848,6 @@ def processMssWrs1Imgs(params):
         imgs.append(yearImg)
 
     outImg = appendIdToBandnames(ee.ImageCollection(imgs).toBands())
-    # bn = outImg.bandNames()
-    # print('Band Names:' + str(bn.getInfo()))
     
     outAsset = params['baseDir'] + '/MSS_WRS1_to_WRS2_stack'
     print(outAsset)
@@ -1329,8 +1327,105 @@ def runLt(params):  #exportTmComposites(params):
 
     return lt.int16()
 
+# nkh add 
+# trying to figure out how to build my TM collections and export to test with Coastsat processing pipeline
+
+def buildMedCol(params):  #exportTmComposites(params):
+    def add_systime(img):
+      millis = ee.Date.fromYMD(img.getNumber('year'), 6 ,1).millis()
+      date = ee.Date(millis).format('YYYY-MM-dd')
+      return img.set({'system:time_start': millis, 'date': date})
+
+    granuleGeom = msslib['getWrs1GranuleGeom'](params['wrs1'])
+    geom = ee.Feature(granuleGeom.get('granule')).geometry()
+
+    mssCol = mssStackToCol(params['baseDir'] + '/WRS1_to_TM_stack').map(add_systime) # TODO: these images do not have a system:time_start - they should have one - should not need to add
+    # for y in range(1972, 2022):
+    #   print(mssCol.filter(ee.Filter.eq('year', y)).first().bandNames().getInfo())
+
+    dummyImg = mssCol.first()
+    dummyImg = dummyImg.updateMask(dummyImg.mask().multiply(0))
+
+    todaysDate = date.today()
+    # tmList = []
+
+    def getTmYearImg(year):
+        params_ = copy.deepcopy(params)
+        params_['yearRange'] = [year, year]
+        bands = ['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'ndvi', 'tcb', 'tcg', 'tcw', 'tca']  # ['blue', 'green', 'red', 'nir', 'ndvi', 'tcb', 'tcg', 'tca'])
+        parallelScale = 8
+        tmCol = gatherTmCol(params_)
+        date = ee.Date(ee.Date.fromYMD(year, 6 ,1).millis())        
+        return ee.Image(ee.Algorithms.If(tmCol.size(), getMedoid(tmCol, bands, parallelScale), dummyImg)).set({
+            'system:time_start': date.millis(),
+            'year': date.get('year'), 
+            'date': date.format('YYYY-MM-dd')
+            })
+    tmYearRange = ee.List.sequence(1984, 2022) # NOTE: end year is set here. -todaysDate.year
+    tmYearImgList = tmYearRange.map(getTmYearImg)
+    tmYearImgCol = ee.ImageCollection.fromImages(tmYearImgList) # this is what I want. 
+    
+
+        
 
 
+
+    # for y in range(1984, 2022):  # todaysDate.year + 1
+    #     params['yearRange'] = [y, y]
+    #     thisYearImg = (getMedoid(
+    #         gatherTmCol(params), ['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'ndvi', 'tcb', 'tcg', 'tcw', 'tca'])  # ['blue', 'green', 'red', 'nir', 'ndvi', 'tcb', 'tcg', 'tca'])
+    #         .set({
+    #             'system:time_start': ee.Date.fromYMD(y, 1 ,1).millis(),
+    #             'year': y
+    #         }))
+    #     tmList.append(thisYearImg)
+
+
+    # col = mssCol.merge(tmYearImgCol).map(addSegBand).sort('year')
+    col = tmYearImgCol
+    years = col.aggregate_array('year')#.getInfo()
+    # millis = col.aggregate_array('system:time_start').getInfo()
+
+    # print('all years', years)
+    # print('all millis', millis)
+
+
+
+    # for y in range(1972, 2022):
+    #   print(col.filter(ee.Filter.eq('year', y)).first().bandNames().getInfo())
+
+    # Deal with missing years (check is other processes are filling bads years, I think MSS is)
+    year_ends = col.aggregate_array('year').reduce(ee.Reducer.minMax()).getInfo()
+    print('year_ends', year_ends)
+    # Make a dummy image for missing years. 
+    bandNames = ee.List(['Blue', 'Green', 'Red', 'NIR', 'SWIR1', 'SWIR2', 'pixel_qa'])
+    fillerValues = ee.List.repeat(0, bandNames.size())
+    dummyImg = ee.Image.constant(fillerValues).rename(bandNames).selfMask().int16()
+
+
+    dummies = []
+    years = list(range(year_ends['min'], year_ends['max']+1))
+    print('years', years)
+    for y in range(year_ends['min'], year_ends['max']+1):
+      print('Checking year', y)
+      colSize = col.filter(ee.Filter.eq('year', y)).size().getInfo()
+      if colSize == 0:
+        print(y, ' is a dummy')
+        dummies.append(dummyImg.set({
+            'system:time_start': ee.Date.fromYMD(y, 6 ,1).millis(),
+            'year': y
+            }))
+
+    col = col.merge(ee.ImageCollection(dummies)).sort('year')
+
+
+
+    col = col.map(add_systime)
+    print('dates', col.aggregate_array('date').getInfo())
+
+    return col
+
+## end nkh add
 
 def exportLt(params):
     print('Exporting LandTrendr segmentation and FTV image array, please wait.')

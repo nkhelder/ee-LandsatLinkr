@@ -855,8 +855,8 @@ def processMssWrs1Imgs(params):
     print(outAsset)
     
     task = ee.batch.Export.image.toAsset(**{
-        'image': outImg.clip(geom),
-        'description': 'MSS_WRS1_to_WRS2_stack',
+        'image': outImg.clip(params['shoreGeom']), # outImg.clip(geom),
+        'description': 'MSS_WRS1_to_WRS2_stack_clip_test',
         'assetId': outAsset,
         'region': geom,
         'scale': 60,
@@ -1151,7 +1151,7 @@ def exportMssOffset(params):
         'image': difCol.clip(params['shoreGeom']), #.clip(geom)
         'description': 'MSS_offset',
         'assetId': outAsset,
-        'region': geom,
+        'region': params['shoreGeom'], # geom,
         'scale': 30,
         'crs': params['crs'],
         'maxPixels': 1e13
